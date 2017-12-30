@@ -2,6 +2,21 @@
 
 This is a simple application which allows you to interact with the Bitcoin payment protocol manually. It displays all of the information from the protocol and lets you perform the actions that your wallet would otherwise do automatically. This lets you use services that use the payment protocol exclusively without having to switch to a new wallet.
 
+## Running
+
+Install all of the dependencies
+
+    python3 setup.py install
+
+Use the Text User Interface
+
+    python tui.py
+
+Compile the Protobuf descriptors
+
+    sudo apt-get install protobuf-compiler
+    protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto
+
 ## License
 
 This project is Copyright (c) 2017 Andrew Chow under the MIT License.
