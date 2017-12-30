@@ -310,7 +310,7 @@ class X509(object):
         return hashlib.sha1(self.bytes).digest()
 
 def load_certificates(ca_path):
-    from . import pem
+    import pem
     ca_list = {}
     ca_keyID = {}
     # ca_path = '/tmp/tmp.txt'

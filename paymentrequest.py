@@ -382,7 +382,7 @@ def verify_cert_chain(chain):
 
 
 def check_ssl_config(config):
-    from . import pem
+    import pem
     key_path = config.get('ssl_privkey')
     cert_path = config.get('ssl_chain')
     with open(key_path, 'r') as f:
@@ -404,7 +404,7 @@ def check_ssl_config(config):
     return requestor
 
 def sign_request_with_x509(pr, key_path, cert_path):
-    from . import pem
+    import pem
     with open(key_path, 'r') as f:
         params = pem.parse_private_key(f.read())
         privkey = rsakey.RSAKey(*params)
@@ -439,81 +439,3 @@ def make_request(config, req):
     if key_path and cert_path:
         sign_request_with_x509(pr, key_path, cert_path)
     return pr
-
-
-
-class InvoiceStore(object):
-
-    def __init__(self, storage):
-        self.storage = storage
-        self.invoices = {}
-        self.paid = {}
-        d = self.storage.get('invoices', {})
-        self.load(d)
-
-    def set_paid(self, pr, txid):
-        pr.tx = txid
-        self.paid[txid] = pr.get_id()
-
-    def load(self, d):
-        for k, v in d.items():
-            try:
-                pr = PaymentRequest(bfh(v.get('hex')))
-                pr.tx = v.get('txid')
-                pr.requestor = v.get('requestor')
-                self.invoices[k] = pr
-                if pr.tx:
-                    self.paid[pr.tx] = k
-            except:
-                continue
-
-    def import_file(self, path):
-        try:
-            with open(path, 'r') as f:
-                d = json.loads(f.read())
-                self.load(d)
-        except:
-            traceback.print_exc(file=sys.stderr)
-            return
-        self.save()
-
-    def save(self):
-        l = {}
-        for k, pr in self.invoices.items():
-            l[k] = {
-                'hex': bh2u(pr.raw),
-                'requestor': pr.requestor,
-                'txid': pr.tx
-            }
-        self.storage.put('invoices', l)
-
-    def get_status(self, key):
-        pr = self.get(key)
-        if pr is None:
-            print_error("[InvoiceStore] get_status() can't find pr for", key)
-            return
-        if pr.tx is not None:
-            return PR_PAID
-        if pr.has_expired():
-            return PR_EXPIRED
-        return PR_UNPAID
-
-    def add(self, pr):
-        key = pr.get_id()
-        self.invoices[key] = pr
-        self.save()
-        return key
-
-    def remove(self, key):
-        self.invoices.pop(key)
-        self.save()
-
-    def get(self, k):
-        return self.invoices.get(k)
-
-    def sorted_list(self):
-        # sort
-        return self.invoices.values()
-
-    def unpaid_invoices(self):
-        return [ self.invoices[k] for k in filter(lambda x: self.get_status(x)!=PR_PAID, self.invoices.keys())]

@@ -394,7 +394,7 @@ class MyVerifyingKey(ecdsa.VerifyingKey):
     def from_signature(klass, sig, recid, h, curve):
         """ See http://www.secg.org/download/aid-780/sec1-v2.pdf, chapter 4.1.6 """
         from ecdsa import util, numbertheory
-        from . import msqr
+        import msqr
         curveFp = curve.curve
         G = curve.generator
         order = G.order()
@@ -494,14 +494,9 @@ def public_key_to_p2pk_script(pubkey):
 
 ############ functions from pywallet #####################
 def hash_160(public_key):
-    try:
-        md = hashlib.new('ripemd160')
-        md.update(sha256(public_key))
-        return md.digest()
-    except BaseException:
-        from . import ripemd
-        md = ripemd.new(sha256(public_key))
-        return md.digest()
+    md = hashlib.new('ripemd160')
+    md.update(sha256(public_key))
+    return md.digest()
 
 
 def hash160_to_b58_address(h160, addrtype, witness_program_version=1):
@@ -566,7 +561,6 @@ def redeem_script_to_address(txin_type, redeem_script):
 
 
 def script_to_address(script):
-    from .transaction import get_address_from_output_script
     t, addr = get_address_from_output_script(bfh(script))
     assert t == TYPE_ADDRESS
     return addr
