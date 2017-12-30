@@ -35,14 +35,34 @@ def print_pr(pr):
                 print("  Data: " + out[1])
             print("  Amount: " + util.format_satoshis(out[2]) + " BTC")
 
+        # Prompt to send transaction
+        print("To continue, send the necessary amounts of Bitcoin to the addresses specified in the 'Outputs' field above. Once broadcast, press ENTER.")
+        input()
+
+        # Only do this if there is a Payment URL
+        if pr.details.payment_url:
+            # Get raw tx and refund address for Payment message
+            raw_tx = input("Enter the hex of the transaction that was just made: ").strip()
+            ref_addr = input("Enter a refund address: ").strip()
+            print(raw_tx)
+            print(ref_addr)
+
+            # Send payment message and wait for ACK
+            result = pr.send_ack(raw_tx, ref_addr)
+            if result[0]:
+                print(result[1])
+            else:
+                print(result[1])
+                exit()
+
 if __name__ == '__main__':
     # Command line interface, print welcome message
     print("Bitcoin Payment Protocol Data Viewer")
     print()
-    print("Enter a Bitcoin URI:")
-    
-    for line in fileinput.input():
-        print()
-        line = line.strip()
-        util.parse_URI(line, print_pr)
-        break
+
+    # Get the payment request
+    uri = input("Enter a Bitcoin URI: ").strip()
+    print()
+    util.parse_URI(uri, print_pr)
+    print()
+    print("Payment Protocol Data Viewer complete")

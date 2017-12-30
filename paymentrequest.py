@@ -287,7 +287,6 @@ class PaymentRequest:
             paymntack.ParseFromString(r.content)
         except Exception:
             return False, "PaymentACK could not be processed. Payment was sent; please manually verify that payment was received."
-        print("PaymentACK message received: %s" % paymntack.memo)
         return True, paymntack.memo
 
 
