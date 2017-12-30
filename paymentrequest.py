@@ -136,7 +136,7 @@ class PaymentRequest:
         return self.get_amount() != 0
         #return self.get_outputs() != [(TYPE_ADDRESS, self.get_requestor(), self.get_amount())]
 
-    def verify(self, contacts):
+    def verify(self):
         if self.error:
             return False
         if not self.raw:
@@ -155,7 +155,7 @@ class PaymentRequest:
         if pr.pki_type in ["x509+sha256", "x509+sha1"]:
             return self.verify_x509(pr)
         elif pr.pki_type in ["dnssec+btc", "dnssec+ecdsa"]:
-            return self.verify_dnssec(pr, contacts)
+            return self.verify_dnssec(pr)
         else:
             self.error = "ERROR: Unsupported PKI Type for Message Signature"
             return False
@@ -197,7 +197,7 @@ class PaymentRequest:
         self.error = 'Signed by Trusted CA: ' + ca.get_common_name()
         return True
 
-    def verify_dnssec(self, pr, contacts):
+    def verify_dnssec(self, pr):
         sig = pr.signature
         alias = pr.pki_data
         info = contacts.resolve(alias)
