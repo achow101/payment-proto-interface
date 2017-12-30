@@ -63,30 +63,11 @@ class ThreadJob(PrintError):
         """Called periodically from the thread"""
         pass
 
-class DebugMem(ThreadJob):
-    '''A handy class for debugging GC memory leaks'''
-    def __init__(self, classes, interval=30):
-        self.next_time = 0
-        self.classes = classes
-        self.interval = interval
-
-    def mem_stats(self):
-        import gc
-        self.print_error("Start memscan")
-        gc.collect()
-        objmap = defaultdict(list)
-        for obj in gc.get_objects():
-            for class_ in self.classes:
-                if isinstance(obj, class_):
-                    objmap[class_].append(obj)
-        for class_, objs in objmap.items():
-            self.print_error("%s: %d" % (class_.__name__, len(objs)))
-        self.print_error("Finish memscan")
-
-    def run(self):
-        if time.time() > self.next_time:
-            self.mem_stats()
-            self.next_time = time.time() + self.interval
+# TODO: disable
+is_verbose = True
+def set_verbosity(b):
+    global is_verbose
+    is_verbose = b
 
 def print_error(*args):
     if not is_verbose: return
@@ -219,12 +200,61 @@ def format_time(timestamp):
 #_ud = re.compile('%([0-9a-hA-H]{2})', re.MULTILINE)
 #urldecode = lambda x: _ud.sub(lambda m: chr(int(m.group(1), 16)), x)
 
+# Copied from Electrum's lib/bitcoin.py
+def is_segwit_address(addr):
+    try:
+        witver, witprog = segwit_addr.decode(NetworkConstants.SEGWIT_HRP, addr)
+    except Exception as e:
+        return False
+    return witprog is not None
+
+def is_b58_address(addr):
+    try:
+        addrtype, h = b58_address_to_hash160(addr)
+    except Exception as e:
+        return False
+    if addrtype not in [NetworkConstants.ADDRTYPE_P2PKH, NetworkConstants.ADDRTYPE_P2SH]:
+        return False
+    return addr == hash160_to_b58_address(h, addrtype)
+
+def is_address(addr):
+    return is_segwit_address(addr) or is_b58_address(addr)
+
+def base_decode(v, length, base):
+    """ decode v into a string of len bytes."""
+    # assert_bytes(v)
+    v = to_bytes(v, 'ascii')
+    assert base in (58, 43)
+    chars = __b58chars
+    if base == 43:
+        chars = __b43chars
+    long_value = 0
+    for (i, c) in enumerate(v[::-1]):
+        long_value += chars.find(bytes([c])) * (base**i)
+    result = bytearray()
+    while long_value >= 256:
+        div, mod = divmod(long_value, 256)
+        result.append(mod)
+        long_value = div
+    result.append(long_value)
+    nPad = 0
+    for c in v:
+        if c == chars[0]:
+            nPad += 1
+        else:
+            break
+    result.extend(b'\x00' * nPad)
+    if length is not None and len(result) != length:
+        return None
+    result.reverse()
+    return bytes(result)
+# End copy
+
 def parse_URI(uri, on_pr=None):
-    from . import bitcoin
-    from .bitcoin import COIN
+    COIN = 100000000
 
     if ':' not in uri:
-        if not bitcoin.is_address(uri):
+        if not is_address(uri):
             raise BaseException("Not a bitcoin address")
         return {'address': uri}
 
@@ -246,7 +276,7 @@ def parse_URI(uri, on_pr=None):
 
     out = {k: v[0] for k, v in pq.items()}
     if address:
-        if not bitcoin.is_address(address):
+        if not is_address(address):
             raise BaseException("Invalid bitcoin address:" + address)
         out['address'] = address
     if 'amount' in out:
@@ -266,31 +296,26 @@ def parse_URI(uri, on_pr=None):
     if 'exp' in out:
         out['exp'] = int(out['exp'])
     if 'sig' in out:
-        out['sig'] = bh2u(bitcoin.base_decode(out['sig'], None, base=58))
+        out['sig'] = bh2u(base_decode(out['sig'], None, base=58))
 
     r = out.get('r')
     sig = out.get('sig')
     name = out.get('name')
     if on_pr and (r or (name and sig)):
-        def get_payment_request_thread():
-            from . import paymentrequest as pr
-            if name and sig:
-                s = pr.serialize_request(out).SerializeToString()
-                request = pr.PaymentRequest(s)
-            else:
-                request = pr.get_payment_request(r)
-            if on_pr:
-                on_pr(request)
-        t = threading.Thread(target=get_payment_request_thread)
-        t.setDaemon(True)
-        t.start()
+        import paymentrequest as pr
+        if name and sig:
+            s = pr.serialize_request(out).SerializeToString()
+            request = pr.PaymentRequest(s)
+        else:
+            request = pr.get_payment_request(r)
+        if on_pr:
+            on_pr(request)
 
     return out
 
 
 def create_URI(addr, amount, message):
-    from . import bitcoin
-    if not bitcoin.is_address(addr):
+    if not is_address(addr):
         return ""
     query = []
     if amount:
@@ -326,6 +351,29 @@ def parse_json(message):
     return j, message[n+1:]
 
 # Copied from Electrum's lib/bitcoin.py
+class NetworkConstants:
+
+    @classmethod
+    def set_mainnet(cls):
+        cls.TESTNET = False
+        cls.WIF_PREFIX = 0x80
+        cls.ADDRTYPE_P2PKH = 0
+        cls.ADDRTYPE_P2SH = 5
+        cls.SEGWIT_HRP = "bc"
+        cls.GENESIS = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+
+    @classmethod
+    def set_testnet(cls):
+        cls.TESTNET = True
+        cls.WIF_PREFIX = 0xef
+        cls.ADDRTYPE_P2PKH = 111
+        cls.ADDRTYPE_P2SH = 196
+        cls.SEGWIT_HRP = "tb"
+        cls.GENESIS = "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"
+
+
+NetworkConstants.set_mainnet()
+
 # supported types of transction outputs
 TYPE_ADDRESS = 0
 TYPE_PUBKEY  = 1
@@ -447,7 +495,237 @@ def public_key_to_p2pk_script(pubkey):
     script += 'ac'                                           # op_checksig
     return script
 
+############ functions from pywallet #####################
+def hash_160(public_key):
+    try:
+        md = hashlib.new('ripemd160')
+        md.update(sha256(public_key))
+        return md.digest()
+    except BaseException:
+        from . import ripemd
+        md = ripemd.new(sha256(public_key))
+        return md.digest()
+
+
+def hash160_to_b58_address(h160, addrtype, witness_program_version=1):
+    s = bytes([addrtype])
+    s += h160
+    return base_encode(s+Hash(s)[0:4], base=58)
+
+
+def b58_address_to_hash160(addr):
+    addr = to_bytes(addr, 'ascii')
+    _bytes = base_decode(addr, 25, base=58)
+    return _bytes[0], _bytes[1:21]
+
+
+def hash160_to_p2pkh(h160):
+    return hash160_to_b58_address(h160, NetworkConstants.ADDRTYPE_P2PKH)
+
+def hash160_to_p2sh(h160):
+    return hash160_to_b58_address(h160, NetworkConstants.ADDRTYPE_P2SH)
+
+def public_key_to_p2pkh(public_key):
+    return hash160_to_p2pkh(hash_160(public_key))
+
+def hash_to_segwit_addr(h):
+    return segwit_addr.encode(NetworkConstants.SEGWIT_HRP, 0, h)
+
+def public_key_to_p2wpkh(public_key):
+    return hash_to_segwit_addr(hash_160(public_key))
+
+def script_to_p2wsh(script):
+    return hash_to_segwit_addr(sha256(bfh(script)))
+
+def p2wpkh_nested_script(pubkey):
+    pkh = bh2u(hash_160(bfh(pubkey)))
+    return '00' + push_script(pkh)
+
+def p2wsh_nested_script(witness_script):
+    wsh = bh2u(sha256(bfh(witness_script)))
+    return '00' + push_script(wsh)
+
+def pubkey_to_address(txin_type, pubkey):
+    if txin_type == 'p2pkh':
+        return public_key_to_p2pkh(bfh(pubkey))
+    elif txin_type == 'p2wpkh':
+        return hash_to_segwit_addr(hash_160(bfh(pubkey)))
+    elif txin_type == 'p2wpkh-p2sh':
+        scriptSig = p2wpkh_nested_script(pubkey)
+        return hash160_to_p2sh(hash_160(bfh(scriptSig)))
+    else:
+        raise NotImplementedError(txin_type)
+
+def redeem_script_to_address(txin_type, redeem_script):
+    if txin_type == 'p2sh':
+        return hash160_to_p2sh(hash_160(bfh(redeem_script)))
+    elif txin_type == 'p2wsh':
+        return script_to_p2wsh(redeem_script)
+    elif txin_type == 'p2wsh-p2sh':
+        scriptSig = p2wsh_nested_script(redeem_script)
+        return hash160_to_p2sh(hash_160(bfh(scriptSig)))
+    else:
+        raise NotImplementedError(txin_type)
+
+
+def script_to_address(script):
+    from .transaction import get_address_from_output_script
+    t, addr = get_address_from_output_script(bfh(script))
+    assert t == TYPE_ADDRESS
+    return addr
+
+def address_to_script(addr):
+    witver, witprog = segwit_addr.decode(NetworkConstants.SEGWIT_HRP, addr)
+    if witprog is not None:
+        assert (0 <= witver <= 16)
+        OP_n = witver + 0x50 if witver > 0 else 0
+        script = bh2u(bytes([OP_n]))
+        script += push_script(bh2u(bytes(witprog)))
+        return script
+    addrtype, hash_160 = b58_address_to_hash160(addr)
+    if addrtype == NetworkConstants.ADDRTYPE_P2PKH:
+        script = '76a9'                                      # op_dup, op_hash_160
+        script += push_script(bh2u(hash_160))
+        script += '88ac'                                     # op_equalverify, op_checksig
+    elif addrtype == NetworkConstants.ADDRTYPE_P2SH:
+        script = 'a9'                                        # op_hash_160
+        script += push_script(bh2u(hash_160))
+        script += '87'                                       # op_equal
+    else:
+        raise BaseException('unknown address type')
+    return script
+
+def address_to_scripthash(addr):
+    script = address_to_script(addr)
+    return script_to_scripthash(script)
+
+def script_to_scripthash(script):
+    h = sha256(bytes.fromhex(script))[0:32]
+    return bh2u(bytes(reversed(h)))
+
+def public_key_to_p2pk_script(pubkey):
+    script = push_script(pubkey)
+    script += 'ac'                                           # op_checksig
+    return script
+
+__b58chars = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+assert len(__b58chars) == 58
+
+__b43chars = b'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$*+-./:'
+assert len(__b43chars) == 43
+
+
+def base_encode(v, base):
+    """ encode v, which is a string of bytes, to base58."""
+    assert_bytes(v)
+    assert base in (58, 43)
+    chars = __b58chars
+    if base == 43:
+        chars = __b43chars
+    long_value = 0
+    for (i, c) in enumerate(v[::-1]):
+        long_value += (256**i) * c
+    result = bytearray()
+    while long_value >= base:
+        div, mod = divmod(long_value, base)
+        result.append(chars[mod])
+        long_value = div
+    result.append(chars[long_value])
+    # Bitcoin does a little leading-zero-compression:
+    # leading 0-bytes in the input become leading-1s
+    nPad = 0
+    for c in v:
+        if c == 0x00:
+            nPad += 1
+        else:
+            break
+    result.extend([chars[0]] * nPad)
+    result.reverse()
+    return result.decode('ascii')
+
+
+def base_decode(v, length, base):
+    """ decode v into a string of len bytes."""
+    # assert_bytes(v)
+    v = to_bytes(v, 'ascii')
+    assert base in (58, 43)
+    chars = __b58chars
+    if base == 43:
+        chars = __b43chars
+    long_value = 0
+    for (i, c) in enumerate(v[::-1]):
+        long_value += chars.find(bytes([c])) * (base**i)
+    result = bytearray()
+    while long_value >= 256:
+        div, mod = divmod(long_value, 256)
+        result.append(mod)
+        long_value = div
+    result.append(long_value)
+    nPad = 0
+    for c in v:
+        if c == chars[0]:
+            nPad += 1
+        else:
+            break
+    result.extend(b'\x00' * nPad)
+    if length is not None and len(result) != length:
+        return None
+    result.reverse()
+    return bytes(result)
+
+
+def EncodeBase58Check(vchIn):
+    hash = Hash(vchIn)
+    return base_encode(vchIn + hash[0:4], base=58)
+
+
+def DecodeBase58Check(psz):
+    vchRet = base_decode(psz, None, base=58)
+    key = vchRet[0:-4]
+    csum = vchRet[-4:]
+    hash = Hash(key)
+    cs32 = hash[0:4]
+    if cs32 != csum:
+        return None
+    else:
+        return key
+# End copy
+
 # Copied from Electrum's lib/transaction.py
+class Enumeration:
+    def __init__(self, name, enumList):
+        self.__doc__ = name
+        lookup = { }
+        reverseLookup = { }
+        i = 0
+        uniqueNames = [ ]
+        uniqueValues = [ ]
+        for x in enumList:
+            if isinstance(x, tuple):
+                x, i = x
+            if not isinstance(x, str):
+                raise EnumException("enum name is not a string: " + x)
+            if not isinstance(i, int):
+                raise EnumException("enum value is not an integer: " + i)
+            if x in uniqueNames:
+                raise EnumException("enum name is not unique: " + x)
+            if i in uniqueValues:
+                raise EnumException("enum value is not unique for " + x)
+            uniqueNames.append(x)
+            uniqueValues.append(i)
+            lookup[x] = i
+            reverseLookup[i] = x
+            i = i + 1
+        self.lookup = lookup
+        self.reverseLookup = reverseLookup
+
+    def __getattr__(self, attr):
+        if attr not in self.lookup:
+            raise AttributeError
+        return self.lookup[attr]
+    def whatis(self, value):
+        return self.reverseLookup[value]
+
 opcodes = Enumeration("Opcodes", [
     ("OP_0", 0), ("OP_PUSHDATA1",76), "OP_PUSHDATA2", "OP_PUSHDATA4", "OP_1NEGATE", "OP_RESERVED",
     "OP_1", "OP_2", "OP_3", "OP_4", "OP_5", "OP_6", "OP_7",
@@ -544,3 +822,4 @@ def pay_script(self, output_type, addr):
         return public_key_to_p2pk_script(addr)
     else:
         raise TypeError('Unknown output type')
+# End copy

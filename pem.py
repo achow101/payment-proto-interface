@@ -30,7 +30,7 @@
 
 import binascii
 
-from .x509 import ASN1_Node, bytestr_to_int, decode_OID
+from x509 import ASN1_Node, bytestr_to_int, decode_OID
 
 
 def a2b_base64(s):

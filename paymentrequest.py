@@ -31,21 +31,18 @@ import requests
 
 import urllib.parse
 
-
 try:
-    from . import paymentrequest_pb2 as pb2
+    import paymentrequest_pb2 as pb2
 except ImportError:
-    sys.exit("Error: could not find paymentrequest_pb2.py. Create it with 'protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto'")
+    sys.exit("Error: could not find paymentrequest_pb2.py. Create it with 'protoc --proto_path=./ --python_out=./ paymentrequest.proto'")
 
-from . import util
-from .util import print_error, bh2u, bfh
-from . import x509
-from . import rsakey
+import util
+from util import print_error, bh2u, bfh, TYPE_ADDRESS
+import x509
+import rsakey
 
-from .bitcoin import TYPE_ADDRESS
-
-REQUEST_HEADERS = {'Accept': 'application/bitcoin-paymentrequest', 'User-Agent': 'Payment Protocol Viewer'}
-ACK_HEADERS = {'Content-Type':'application/bitcoin-payment','Accept':'application/bitcoin-paymentack','User-Agent':'Payment Protocol Viewer'}
+REQUEST_HEADERS = {'Accept': 'application/bitcoin-paymentrequest', 'User-Agent': 'Electrum'}
+ACK_HEADERS = {'Content-Type':'application/bitcoin-payment','Accept':'application/bitcoin-paymentack','User-Agent':'Payment-Protocol-Viewer'}
 
 ca_path = requests.certs.where()
 ca_list = None
