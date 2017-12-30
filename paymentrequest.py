@@ -37,7 +37,7 @@ except ImportError:
     sys.exit("Error: could not find paymentrequest_pb2.py. Create it with 'protoc --proto_path=./ --python_out=./ paymentrequest.proto'")
 
 import util
-from util import print_error, bh2u, bfh, TYPE_ADDRESS
+from util import print_error, bh2u, bfh, TYPE_ADDRESS, NetworkConstants
 import x509
 import rsakey
 
@@ -118,6 +118,13 @@ class PaymentRequest:
             return
         self.details = pb2.PaymentDetails()
         self.details.ParseFromString(self.data.serialized_payment_details)
+        if self.details.network == 'test':
+            NetworkConstants.set_testnet()
+        elif self.details.network == 'main':
+            NetworkConstants.set_mainnet()
+        else:
+            self.error = "unknown network " + self.details.network
+            return
         self.outputs = []
         for o in self.details.outputs:
             addr = util.get_address_from_output_script(o.script)[1]

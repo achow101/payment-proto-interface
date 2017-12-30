@@ -371,9 +371,6 @@ class NetworkConstants:
         cls.SEGWIT_HRP = "tb"
         cls.GENESIS = "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"
 
-
-NetworkConstants.set_mainnet()
-
 # supported types of transction outputs
 TYPE_ADDRESS = 0
 TYPE_PUBKEY  = 1
