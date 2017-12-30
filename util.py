@@ -33,6 +33,7 @@ import urllib
 import threading
 import hashlib
 import ecdsa
+import segwit_addr
 
 import urllib.request, urllib.parse, urllib.error
 import queue
@@ -375,6 +376,27 @@ class NetworkConstants:
 TYPE_ADDRESS = 0
 TYPE_PUBKEY  = 1
 TYPE_SCRIPT  = 2
+
+def rev_hex(s):
+    return bh2u(bfh(s)[::-1])
+
+def int_to_hex(i, length=1):
+    assert isinstance(i, int)
+    s = hex(i)[2:].rstrip('L')
+    s = "0"*(2*length - len(s)) + s
+    return rev_hex(s)
+def op_push(i):
+    if i<0x4c:
+        return int_to_hex(i)
+    elif i<0xff:
+        return '4c' + int_to_hex(i)
+    elif i<0xffff:
+        return '4d' + int_to_hex(i,2)
+    else:
+        return '4e' + int_to_hex(i,4)
+
+def push_script(x):
+    return op_push(len(x)//2) + x
 
 def sha256(x):
     x = to_bytes(x, 'utf8')
@@ -804,7 +826,7 @@ def get_address_from_output_script(_bytes):
 
     return TYPE_SCRIPT, bh2u(_bytes)
 
-def pay_script(self, output_type, addr):
+def pay_script(output_type, addr):
     if output_type == TYPE_SCRIPT:
         return addr
     elif output_type == TYPE_ADDRESS:

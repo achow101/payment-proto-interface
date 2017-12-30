@@ -2,12 +2,12 @@
 #
 # Copyright (C) 2017 Andrew Chow
 
-import fileinput
 import util
 
 def print_pr(pr):
     if pr.error:
         print(pr.error)
+        exit()
     else:
         pr.verify()
         print()
