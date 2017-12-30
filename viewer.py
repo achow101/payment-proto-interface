@@ -57,7 +57,7 @@ def print_pr(pr):
 
 if __name__ == '__main__':
     # Command line interface, print welcome message
-    print("Bitcoin Payment Protocol Data Viewer")
+    print("Bitcoin Payment Protocol Interface")
     print()
 
     # Get the payment request
@@ -65,4 +65,4 @@ if __name__ == '__main__':
     print()
     util.parse_URI(uri, print_pr)
     print()
-    print("Payment Protocol Data Viewer complete")
+    print("Payment complete!")

@@ -1,6 +1,6 @@
-# Bitcoin Payment Protocol Viewer
+# Bitcoin Payment Protocol Interface
 
-This is a simple application which displays the information inside of the Bitcoin payment protocol messages. You can use this to get the addresses that the protocol requests the Bitcoin to be sent to, the memo attached to an invoice, merchant data, and other invoice information.
+This is a simple application which allows you to interact with the Bitcoin payment protocol manually. It displays all of the information from the protocol and lets you perform the actions that your wallet would otherwise do automatically. This lets you use services that use the payment protocol exclusively without having to switch to a new wallet.
 
 ## License
 

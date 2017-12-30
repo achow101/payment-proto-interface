@@ -41,8 +41,8 @@ from util import print_error, bh2u, bfh, TYPE_ADDRESS, NetworkConstants
 import x509
 import rsakey
 
-REQUEST_HEADERS = {'Accept': 'application/bitcoin-paymentrequest', 'User-Agent': 'Payment Protocol Viewer'}
-ACK_HEADERS = {'Content-Type':'application/bitcoin-payment','Accept':'application/bitcoin-paymentack','User-Agent':'Payment Protocol Viewer'}
+REQUEST_HEADERS = {'Accept': 'application/bitcoin-paymentrequest', 'User-Agent': 'Payment Protocol Interface'}
+ACK_HEADERS = {'Content-Type':'application/bitcoin-payment','Accept':'application/bitcoin-paymentack','User-Agent':'Payment Protocol Interface'}
 
 ca_path = requests.certs.where()
 ca_list = None
@@ -268,7 +268,7 @@ class PaymentRequest:
         paymnt.transactions.append(bfh(raw_tx))
         ref_out = paymnt.refund_to.add()
         ref_out.script = util.bfh(util.pay_script(TYPE_ADDRESS, refund_addr))
-        paymnt.memo = "Paid with the Bitcoin Payment Protocol Viewer"
+        paymnt.memo = "Paid with the Bitcoin Payment Protocol Interface"
         pm = paymnt.SerializeToString()
         payurl = urllib.parse.urlparse(pay_det.payment_url)
         try:
