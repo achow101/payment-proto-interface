@@ -36,7 +36,7 @@ def print_pr(pr):
             print("  Amount: " + util.format_satoshis(out[2]) + " BTC")
 
         # Prompt to send transaction
-        print("To continue, send the necessary amounts of Bitcoin to the addresses specified in the 'Outputs' field above. Once broadcast, press ENTER.")
+        print("To continue, send the necessary amounts of Bitcoin to the addresses specified in the 'Outputs' field above. Once broadcast, press ENTER to continue or CTRL+C to exit.")
         input()
 
         # Only do this if there is a Payment URL
@@ -44,8 +44,6 @@ def print_pr(pr):
             # Get raw tx and refund address for Payment message
             raw_tx = input("Enter the hex of the transaction that was just made: ").strip()
             ref_addr = input("Enter a refund address: ").strip()
-            print(raw_tx)
-            print(ref_addr)
 
             # Send payment message and wait for ACK
             result = pr.send_ack(raw_tx, ref_addr)
