@@ -7,15 +7,19 @@ This is a simple application which allows you to interact with the Bitcoin payme
 Install all of the dependencies
 
     python3 setup.py install
+    
+Compile the Protobuf descriptors
+
+    sudo apt-get install protobuf-compiler
+    protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto
 
 Use the Text User Interface
 
     python tui.py
 
-Compile the Protobuf descriptors
+Or use the Graphical User Interface
 
-    sudo apt-get install protobuf-compiler
-    protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto
+    python gui.py
 
 ## License
 
