@@ -103,6 +103,8 @@ setup(
     install_requires=[
         'requests',
         'ecdsa',
+        'protobuf',
+        'PyQt5',
         ],  # Optional
 
     # To provide executable scripts, use entry points in preference to the
