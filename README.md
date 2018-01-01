@@ -26,3 +26,7 @@ Or use the Graphical User Interface
 This project is Copyright (c) 2017 Andrew Chow under the MIT License.
 
 Parts of this project are taken from Electrum; those are Copyright (c) The Electrum Developers under the MIT License
+
+## Disclaimer
+
+I do not guarantee that any part of this software actually works and you use it at your own risk. While I try the best I can to make quality software, I am only human and mistakes can happen. I am not liable for any losses or potential losses caused by this software.
