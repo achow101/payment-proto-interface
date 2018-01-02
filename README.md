@@ -11,7 +11,7 @@ Install all of the dependencies
 Compile the Protobuf descriptors
 
     sudo apt-get install protobuf-compiler
-    protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto
+    protoc --proto_path=./ --python_out=./ ./paymentrequest.proto
 
 Use the Text User Interface
 
