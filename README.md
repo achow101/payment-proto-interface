@@ -21,6 +21,21 @@ Or use the Graphical User Interface
 
     python gui.py
 
+## Building for release
+
+To build a binary package for a release, you must have a machine of the target OS and bit-ness (e.g. Windows 64-bit) to build on.
+
+First install `pyinstaller`:
+
+    pip3 install pyinstaller
+
+Then create the executables:
+
+    pyinstaller -F -n btcpp-cli tui.py
+    pyinstaller -F -n btcpp-qt --windowed gui.py
+
+This will create the executables `btcpp-cli` and `btcpp-qt` in the `dist/` folder
+
 ## License
 
 This project is Copyright (c) 2017 Andrew Chow under the MIT License.
