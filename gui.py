@@ -7,7 +7,7 @@ import util
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QMessageBox, QInputDialog, QGroupBox, QHBoxLayout, QVBoxLayout, QGridLayout, QLabel
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, Qt
  
 class App(QWidget):
  
@@ -53,29 +53,75 @@ class App(QWidget):
             pr.verify()
             self.payment_data_box.setTitle("Payment Request Data")
             pr_data_layout = QGridLayout()
-            pr_data_layout.addWidget(QLabel("Network: " + pr.details.network), 0, 0)
-            pr_data_layout.addWidget(QLabel("Requestor: " + pr.get_requestor()), 1, 0)
-            pr_data_layout.addWidget(QLabel("Memo: " + pr.get_memo()), 2, 0)
-            pr_data_layout.addWidget(QLabel("Expiration: " + util.format_time(pr.get_expiration_date())), 3, 0)
-            pr_data_layout.addWidget(QLabel("Creation Time: " + util.format_time(pr.details.time)), 4, 0)
-            pr_data_layout.addWidget(QLabel("Verification status: " + pr.get_verify_status()), 5, 0)
-            pr_data_layout.addWidget(QLabel("Merchant Data: " + str(pr.details.merchant_data)), 6, 0)
+
+            pr_data_layout.addWidget(QLabel("Network:"), 0, 0)
+            network_lbl = QLabel(pr.details.network)
+            network_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            pr_data_layout.addWidget(network_lbl, 0, 1)
+
+            pr_data_layout.addWidget(QLabel("Requestor:"), 1, 0)
+            requestor_lbl = QLabel(pr.get_requestor())
+            requestor_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            pr_data_layout.addWidget(requestor_lbl, 1, 1)
+
+            pr_data_layout.addWidget(QLabel("Memo:"), 2, 0)
+            memo_lbl = QLabel(pr.get_memo())
+            memo_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            pr_data_layout.addWidget(memo_lbl, 2, 1)
+
+            pr_data_layout.addWidget(QLabel("Expiration:"), 3, 0)
+            expire_lbl = QLabel(util.format_time(pr.get_expiration_date()))
+            expire_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            pr_data_layout.addWidget(expire_lbl, 3, 1)
+
+            pr_data_layout.addWidget(QLabel("Creation Time:"), 4, 0)
+            creation_lbl = QLabel(util.format_time(pr.details.time))
+            creation_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            pr_data_layout.addWidget(creation_lbl, 4, 1)
+
+            pr_data_layout.addWidget(QLabel("Verification status:"), 5, 0)
+            verification_lbl = QLabel(pr.get_verify_status())
+            verification_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            pr_data_layout.addWidget(verification_lbl, 5, 1)
+
+            pr_data_layout.addWidget(QLabel("Merchant Data:"), 6, 0)
+            merch_lbl = QLabel(str(pr.details.merchant_data))
+            merch_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            pr_data_layout.addWidget(merch_lbl, 6, 1)
+
             pr_data_layout.addWidget(QLabel("Outputs:"), 7, 0)
             i = 0
             for out in pr.get_outputs():
+                type_lbl = QLabel()
                 if out[0] == util.TYPE_ADDRESS:
-                    pr_data_layout.addWidget(QLabel("  Type: Address"), 8 + i, 0)
-                    pr_data_layout.addWidget(QLabel("  Address: " + out[1]), 8 + i + 1, 0)
+                    pr_data_layout.addWidget(QLabel("  Type:"), 8 + i, 0)
+                    type_lbl.setText("Address")
+                    pr_data_layout.addWidget(QLabel("  Address:"), 8 + i + 1, 0)
                 elif out[0] == util.TYPE_PUBKEY:
-                    pr_data_layout.addWidget(QLabel("  Type: Public Key"), 8 + i, 0)
-                    pr_data_layout.addWidget(QLabel("  Public Key: " + out[1]), 8 + i + 1, 0)
+                    pr_data_layout.addWidget(QLabel("  Type:"), 8 + i, 0)
+                    type_lbl.setText("Public Key")
+                    pr_data_layout.addWidget(QLabel("  Public Key:"), 8 + i + 1, 0)
                 elif out[0] == util.TYPE_SCRIPT:
-                    pr_data_layout.addWidget(QLabel("  Type: Script"), 8 + i, 0)
-                    pr_data_layout.addWidget(QLabel("  Script: " + out[1]), 8 + i + 1, 0)
+                    pr_data_layout.addWidget(QLabel("  Type:"), 8 + i, 0)
+                    type_lbl.setText("Script")
+                    pr_data_layout.addWidget(QLabel("  Script:"), 8 + i + 1, 0)
                 else:
-                    pr_data_layout.addWidget(QLabel("  Type: Unknown"), 8 + i, 0)
-                    pr_data_layout.addWidget(QLabel("  Data: " + out[1]), 8 + i + 1, 0)
-                pr_data_layout.addWidget(QLabel("  Amount: " + util.format_satoshis(out[2]) + " BTC"), 8 + i + 2, 0)
+                    pr_data_layout.addWidget(QLabel("  Type:"), 8 + i, 0)
+                    type_lbl.setText("Unknown")
+                    pr_data_layout.addWidget(QLabel("  Data:"), 8 + i + 1, 0)
+
+                type_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+                pr_data_layout.addWidget(type_lbl, 8 + i, 1)
+
+                data_lbl = QLabel(out[1])
+                data_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+                pr_data_layout.addWidget(data_lbl, 8 + i + 1, 1)
+
+                amt_lbl = QLabel(util.format_satoshis(out[2]) + " BTC")
+                amt_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+                pr_data_layout.addWidget(QLabel("  Amount:"), 8 + i + 2, 0)
+                pr_data_layout.addWidget(amt_lbl, 8 + i + 2, 1)
+
                 i += 3
             next_button = QPushButton("Next")
             next_button.clicked.connect(self.make_further_instructions(pr))
