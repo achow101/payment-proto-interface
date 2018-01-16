@@ -104,6 +104,6 @@ setup(
         'requests',
         'ecdsa',
         'protobuf',
-        'PyQt5',
+        'pyqt5',
         ],  # Optional
 )
